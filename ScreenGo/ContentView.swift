@@ -8,17 +8,21 @@
 import SwiftUI
 
 struct ContentView: View {
-    var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
-        }
-        .padding()
-    }
-}
+    @StateObject private var viewModel = ViewModel()
+    @EnvironmentObject var appDelegate: AppDelegate
 
-#Preview {
-    ContentView()
+    var body: some View {
+        VStack{
+            Spacer()
+            HStack{
+                Text("Device: external capture")
+                Text("Resolution: 1920*1080")
+            }
+            VideoPreviewView(session: $viewModel.session)
+                .onAppear(perform: viewModel.setup)
+                .environmentObject(appDelegate)
+            Spacer()
+        }
+        
+    }
 }
