@@ -18,7 +18,7 @@ struct VideoPreviewView: UIViewRepresentable {
         previewLayer.videoGravity = .resizeAspect
         view.layer.addSublayer(previewLayer)
         previewLayer.frame = view.frame
-
+        previewLayer.connection?.videoRotationAngle = 0
         return view
     }
 

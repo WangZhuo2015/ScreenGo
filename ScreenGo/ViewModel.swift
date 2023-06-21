@@ -22,6 +22,7 @@ class ViewModel: ObservableObject {
     
     @Published var setupResult: SetupResult = .success
     @Published var session = AVCaptureSession()
+    @Published var externalDevices: [String] = []
     @EnvironmentObject var appDelegate: AppDelegate
     
     private let sessionQueue = DispatchQueue(label: "session queue")
@@ -33,16 +34,15 @@ class ViewModel: ObservableObject {
     let captureAudioOutput = AVCaptureAudioDataOutput()
     private var devicesObservation: NSKeyValueObservation?
     private var discoverySession: AVCaptureDevice.DiscoverySession?
-    var externalDevices: [String]{
-        get{
-            self.discoverySession?.devices.map{$0.localizedName} ?? []
-        }
-    }
+//    var externalDevices: [String]{
+//        get{
+//            self.discoverySession?.devices.map{$0.localizedName} ?? []
+//        }
+//    }
     
     func setup() {
         checkCameraAuthorization()
         configureSession()
-        startSession()
         observeDeviceChanges()
     }
     
@@ -50,7 +50,30 @@ class ViewModel: ObservableObject {
         self.discoverySession = AVCaptureDevice.DiscoverySession(deviceTypes: [.external], mediaType: .video, position: .unspecified)
         devicesObservation = discoverySession?.observe(\.devices, options: .new) { discoverySession, change in
             print("Devices changed: \(discoverySession.devices)")
-            self.reconnectCaptureCard()
+            DispatchQueue.main.async {
+                self.externalDevices = self.discoverySession?.devices.map{$0.localizedName} ?? []
+            }
+            self.sessionQueue.async {
+                if discoverySession.devices.isEmpty{
+                    if self.audioEngine.isRunning{
+                        try! self.audioEngine.stop()
+                    }
+                    self.audioEngine.disconnectNodeInput(self.audioEngine.outputNode)
+                    if self.session.isRunning{
+                        self.session.stopRunning()
+                    }
+                    // remove all inputs and outputs
+                    for input in self.session.inputs {
+                        self.session.removeInput(input)
+                    }
+                    for output in self.session.outputs {
+                        self.session.removeOutput(output)
+                    }
+                    
+                }else{
+                    self.reconnectCaptureCard()
+                }
+            }
         }
     }
     
@@ -83,10 +106,6 @@ class ViewModel: ObservableObject {
             print("session stopped")
         }
         configureSession()
-        if setupResult == .success {
-            startSession()
-            print("session started")
-        }
     }
     
     
@@ -96,6 +115,10 @@ class ViewModel: ObservableObject {
             self.session.sessionPreset = .hd1920x1080
             self.session.usesApplicationAudioSession = true
             let devices = AVCaptureDevice.DiscoverySession(deviceTypes: [.external], mediaType: .video, position: .unspecified).devices
+            DispatchQueue.main.async {
+                self.externalDevices = self.discoverySession?.devices.map{$0.localizedName} ?? []
+            }
+            
             guard let externalDevice = devices.first else {
                 print("No external device found.")
                 DispatchQueue.main.async {
@@ -116,6 +139,7 @@ class ViewModel: ObservableObject {
                         self.setupResult = .configurationFailed
                     }
                     self.session.commitConfiguration()
+                    self.session.stopRunning()
                     return
                 }
             } catch {
@@ -124,6 +148,7 @@ class ViewModel: ObservableObject {
                     self.setupResult = .configurationFailed
                 }
                 self.session.commitConfiguration()
+                self.session.stopRunning()
                 return
             }
             
@@ -138,12 +163,15 @@ class ViewModel: ObservableObject {
                 }
                 
                 // Connect the audio engine's input and output only after the audio device input has been added to the session.
-                self.audioEngine.connect(self.audioEngine.inputNode, to: self.audioEngine.outputNode, format: self.audioEngine.inputNode.inputFormat(forBus: 0))
-                try self.audioEngine.start()
+                // delay 1 second to wait for audio device input to be added to the session
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                    self.audioEngine.connect(self.audioEngine.inputNode, to: self.audioEngine.outputNode, format: self.audioEngine.inputNode.inputFormat(forBus: 0))
+                    try! self.audioEngine.start()
+                }
             } catch {
                 print("Could not create audio device input: \(error)")
             }
-            
+//            
             let photoOutput = AVCaptureMovieFileOutput()
             if self.session.canAddOutput(photoOutput) {
                 self.session.addOutput(photoOutput)
@@ -153,25 +181,11 @@ class ViewModel: ObservableObject {
                     self.setupResult = .configurationFailed
                 }
                 self.session.commitConfiguration()
+                self.session.stopRunning()
                 return
             }
             self.session.commitConfiguration()
+            self.session.startRunning()
         }
-    }
-    
-    private func startSession() {
-        sessionQueue.async {
-            switch self.setupResult {
-            case .success:
-                self.session.startRunning()
-                self.isSessionRunning = self.session.isRunning
-                
-            case .notAuthorized, .configurationFailed:
-                DispatchQueue.main.async {
-                    self.setupResult = self.setupResult
-                }
-            }
-        }
-        
     }
 }

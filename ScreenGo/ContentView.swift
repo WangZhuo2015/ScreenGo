@@ -21,6 +21,7 @@ struct ContentView: View {
                 Spacer()
                 Button("Reconnect Capture Card"){
                     viewModel.reconnectCaptureCard()
+                    
                 }
                 Spacer()
             }
@@ -29,6 +30,5 @@ struct ContentView: View {
                 .environmentObject(appDelegate)
             Spacer()
         }
-        
     }
 }
