@@ -15,8 +15,14 @@ struct ContentView: View {
         VStack{
             Spacer()
             HStack{
-                Text("Device: external capture")
-                Text("Resolution: 1920*1080")
+                Spacer()
+                Text(viewModel.externalDevices.first ?? "No device connected")
+//                Text("Resolution: 1920*1080")
+                Spacer()
+                Button("Reconnect Capture Card"){
+                    viewModel.reconnectCaptureCard()
+                }
+                Spacer()
             }
             VideoPreviewView(session: $viewModel.session)
                 .onAppear(perform: viewModel.setup)
