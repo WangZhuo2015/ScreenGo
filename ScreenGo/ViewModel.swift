@@ -34,12 +34,6 @@ class ViewModel: ObservableObject {
     let captureAudioOutput = AVCaptureAudioDataOutput()
     private var devicesObservation: NSKeyValueObservation?
     private var discoverySession: AVCaptureDevice.DiscoverySession?
-//    var externalDevices: [String]{
-//        get{
-//            self.discoverySession?.devices.map{$0.localizedName} ?? []
-//        }
-//    }
-    
     func setup() {
         checkCameraAuthorization()
         configureSession()
@@ -152,26 +146,11 @@ class ViewModel: ObservableObject {
                 return
             }
             
-            // Add an audio input device.
-            do {
-                let audioDevice = AVCaptureDevice.default(for: .audio)
-                let audioDeviceInput = try AVCaptureDeviceInput(device: audioDevice!)
-                if self.session.canAddInput(audioDeviceInput) {
-                    self.session.addInput(audioDeviceInput)
-                } else {
-                    print("Could not add audio device input to the session")
-                }
-                
-                // Connect the audio engine's input and output only after the audio device input has been added to the session.
-                // delay 1 second to wait for audio device input to be added to the session
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                    self.audioEngine.connect(self.audioEngine.inputNode, to: self.audioEngine.outputNode, format: self.audioEngine.inputNode.inputFormat(forBus: 0))
-                    try! self.audioEngine.start()
-                }
-            } catch {
-                print("Could not create audio device input: \(error)")
+            // delay 1 second to wait for audio device input to be added to the session
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                self.audioEngine.connect(self.audioEngine.inputNode, to: self.audioEngine.outputNode, format: self.audioEngine.inputNode.inputFormat(forBus: 0))
+                try! self.audioEngine.start()
             }
-//            
             let photoOutput = AVCaptureMovieFileOutput()
             if self.session.canAddOutput(photoOutput) {
                 self.session.addOutput(photoOutput)

@@ -17,12 +17,6 @@ struct ContentView: View {
             HStack{
                 Spacer()
                 Text(viewModel.externalDevices.first ?? "No device connected")
-//                Text("Resolution: 1920*1080")
-                Spacer()
-                Button("Reconnect Capture Card"){
-                    viewModel.reconnectCaptureCard()
-                    
-                }
                 Spacer()
             }
             VideoPreviewView(session: $viewModel.session)

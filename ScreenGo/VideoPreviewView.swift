@@ -28,15 +28,17 @@ struct VideoPreviewView: UIViewRepresentable {
             layer.frame = uiView.bounds
             layer.connection?.automaticallyAdjustsVideoMirroring = false
             layer.connection?.isVideoMirrored = false
-
-            switch appDelegate.orientation {
-            case .portrait, .portraitUpsideDown:
-                layer.connection?.videoRotationAngle = 180
-            case .landscapeLeft, .landscapeRight:
-                layer.connection?.videoRotationAngle = 0
-            default:
-                layer.connection?.videoRotationAngle = 0
-            }
+            layer.connection?.videoRotationAngle = 0
         }
     }
 }
+
+
+//            switch appDelegate.orientation {
+//            case .portrait, .portraitUpsideDown:
+//                layer.connection?.videoRotationAngle = 180
+//            case .landscapeLeft, .landscapeRight , .unknown:
+//                layer.connection?.videoRotationAngle = 0
+//            default:
+//                layer.connection?.videoRotationAngle = 0
+//            }
